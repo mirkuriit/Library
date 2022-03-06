@@ -3,9 +3,11 @@ package com.example.library;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.view.View;
@@ -27,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences bookAnnotationPreferences;
     SharedPreferences.Editor editor;
     public static final String prefName = "bookAnnotations";
+    DataBaseHelper dataBaseHelper;
+    SQLiteDatabase database;
 
 
 
@@ -41,6 +45,11 @@ public class MainActivity extends AppCompatActivity {
 
         bookList = findViewById(R.id.book_list);
         bookLinkedList = new LinkedList<>();
+
+        //создание и/или открытие базы данных
+        dataBaseHelper = new DataBaseHelper(this);
+        database = dataBaseHelper.getWritableDatabase();
+
 
         //todo подготовка данных
         bookLinkedList.add(new Book("А.Азимов", "Основание",
@@ -69,6 +78,12 @@ public class MainActivity extends AppCompatActivity {
             bookMap.put(keyArray[1], bookLinkedList.get(i).title);
             bookMap.put(keyArray[2], bookLinkedList.get(i).year);
             bookMap.put(keyArray[3], bookLinkedList.get(i).coverId);
+            //todo Проверка наличия записи
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(DataBaseHelper.COLUMN_AUTHOR, bookLinkedList.get(i).author);
+            contentValues.put(DataBaseHelper.COLUMN_TITLE, bookLinkedList.get(i).title);
+            contentValues.put(DataBaseHelper.COLUMN_YEAR, bookLinkedList.get(i).year);
+            database.insert(DataBaseHelper.TABLE_NAME, null, contentValues);
             listForAdapter.add(bookMap);
         }
         //todo создание адаптера
@@ -77,10 +92,8 @@ public class MainActivity extends AppCompatActivity {
         SimpleAdapter simpleAdapter = new SimpleAdapter(this,
                 listForAdapter, R.layout.list_item, keyArray, idArray);
 
-
         //todo привязать адаптер к listview
         bookList.setAdapter(simpleAdapter);
-
 
         //todo реакция на нажатие
         bookList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -96,6 +109,8 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+
         //TODO создать интерфейс добавления-удаления
 //        addNewBookButton.setOnClickListener(new View.OnClickListener() {
 //            @Override
@@ -118,5 +133,11 @@ public class MainActivity extends AppCompatActivity {
 //                arrayAdapter.notifyDataSetChanged();//обновление экрана
 //            }
 //        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        database.close();
     }
 }
